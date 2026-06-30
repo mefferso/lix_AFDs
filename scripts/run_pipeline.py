@@ -10,6 +10,7 @@ from collect_text_products import collect_text_products
 from collect_external_sources import collect_external_text_sources
 from collect_soundings import collect_soundings
 from collect_model_context import collect_model_context
+from collect_current_trends_context import collect_current_trends_context
 from collect_screenshots import collect_screenshots
 from package_ai_context import build_ai_context
 
@@ -36,6 +37,7 @@ def main() -> None:
     collect_external_text_sources(package_dir, config)
     collect_soundings(package_dir, config)
     collect_model_context(package_dir, config)
+    collect_current_trends_context(package_dir, config)
     collect_screenshots(package_dir, config)
     build_ai_context(package_dir, config)
 
