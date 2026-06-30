@@ -12,6 +12,7 @@ from collect_soundings import collect_soundings
 from collect_model_context import collect_model_context
 from collect_current_trends_context import collect_current_trends_context
 from collect_notes_form import collect_notes_form
+from collect_analysis_context import collect_analysis_context
 from collect_screenshots import collect_screenshots
 from package_ai_context import build_ai_context
 
@@ -40,6 +41,7 @@ def main() -> None:
     collect_model_context(package_dir, config)
     collect_current_trends_context(package_dir, config)
     collect_notes_form(package_dir, config)
+    collect_analysis_context(package_dir, config)
     collect_screenshots(package_dir, config)
     build_ai_context(package_dir, config)
 
@@ -48,6 +50,7 @@ def main() -> None:
     print(f"Review file: {package_dir / 'package_review.md'}")
     print(f"Model context: {package_dir / 'model_context' / 'model_context.md'}")
     print(f"Notes form: {package_dir / 'forecast_notes_form.html'}")
+    print(f"Analysis context: {package_dir / 'analysis_context' / 'analysis_screenshots_manifest.json'}")
     print(f"AI context: {package_dir / 'ai_context.md'}")
 
 
