@@ -7,11 +7,13 @@ This is a forecaster helper, not an automated product generator. The goal is to 
 - latest surface observations
 - recent NWS text products
 - active alerts
-- SPC/WPC/NHC context links or screenshots
+- SPC/WPC/NHC external text/web context
+- SPC/WPC/NHC screenshots
 - model/source placeholders ready for expansion
 - a structured `manifest.json`
+- a structured `package_review.md`
 - a structured `ai_context.md`
-- an AFD drafting prompt
+- AFD drafting and package-review prompts
 
 The AI output should always be reviewed and edited by a human forecaster before operational use.
 
@@ -21,11 +23,13 @@ The AI output should always be reviewed and edited by a human forecaster before 
 .github/workflows/afd_collection.yml   GitHub Actions scheduled/manual run
 config/config.yaml                     LIX-specific config
 prompts/afd_prompt.md                  reusable AFD drafting prompt
+prompts/review_package_prompt.md       prompt to critique package quality before drafting
 scripts/run_pipeline.py                main pipeline runner
 scripts/collect_observed.py            METAR/latest obs collection from api.weather.gov
 scripts/collect_text_products.py       previous AFD/HWO/alerts collection
+scripts/collect_external_sources.py    SPC/WPC/NHC web/text source collector
 scripts/collect_screenshots.py         Playwright screenshot collector
-scripts/package_ai_context.py          builds manifest.json and ai_context.md
+scripts/package_ai_context.py          builds manifest, review, and AI context files
 output/.gitkeep                        placeholder only; generated files are ignored
 requirements.txt                       Python dependencies
 .gitignore                             keeps generated junk out of git
@@ -56,6 +60,18 @@ Actions → AFD Data Collection → Run workflow
 ```
 
 The workflow also has a cron schedule. Cron times are UTC, so adjust them in `.github/workflows/afd_collection.yml` for your shift needs.
+
+## What to inspect after a run
+
+Open the downloaded artifact and check:
+
+```text
+package_review.md
+ai_context.md
+manifest.json
+```
+
+Start with `package_review.md`. It is the quick sanity check. Then feed `ai_context.md` to an AI for review or drafting.
 
 ## Philosophy
 

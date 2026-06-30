@@ -5,7 +5,7 @@ office:
   timezone: America/Chicago
 
 nws_api:
-  user_agent: "lix-afd-assistant/0.1 michael.wfo-lix.local"
+  user_agent: "lix-afd-assistant/0.2 michael.wfo-lix.local"
   base_url: "https://api.weather.gov"
 
 observations:
@@ -36,6 +36,28 @@ alerts:
     - LA
     - MS
 
+external_text_sources:
+  enabled: true
+  sources:
+    spc_day1_outlook:
+      url: "https://www.spc.noaa.gov/products/outlook/day1otlk.txt"
+      purpose: "SPC Day 1 convective outlook text"
+    spc_day2_outlook:
+      url: "https://www.spc.noaa.gov/products/outlook/day2otlk.txt"
+      purpose: "SPC Day 2 convective outlook text"
+    spc_day3_outlook:
+      url: "https://www.spc.noaa.gov/products/outlook/day3otlk.txt"
+      purpose: "SPC Day 3 convective outlook text"
+    nhc_atlantic_two:
+      url: "https://www.nhc.noaa.gov/text/MIATWOAT.shtml"
+      purpose: "NHC Atlantic Tropical Weather Outlook"
+    nhc_gulf_twd:
+      url: "https://www.nhc.noaa.gov/text/MIATWDAT.shtml"
+      purpose: "NHC Tropical Weather Discussion including Gulf context"
+    wpc_mpd_index:
+      url: "https://www.wpc.ncep.noaa.gov/metwatch/metwatch_mpd_multi.php"
+      purpose: "WPC mesoscale precipitation discussion index/context"
+
 screenshots:
   enabled: true
   viewport_width: 1600
@@ -44,9 +66,15 @@ screenshots:
     spc_mesoanalysis:
       url: "https://www.spc.noaa.gov/exper/mesoanalysis/"
       purpose: "current instability, shear, boundaries, and mesoscale context"
+    spc_day1_outlook_graphic:
+      url: "https://www.spc.noaa.gov/products/outlook/day1otlk.html"
+      purpose: "SPC Day 1 categorical/graphic convective outlook"
     wpc_ero:
       url: "https://www.wpc.ncep.noaa.gov/qpf/excessive_rainfall_outlook_ero.php"
       purpose: "excessive rainfall outlook and heavy-rain context"
+    wpc_mpd_index:
+      url: "https://www.wpc.ncep.noaa.gov/metwatch/metwatch_mpd_multi.php"
+      purpose: "WPC MPD visual/context page"
     nhc_home:
       url: "https://www.nhc.noaa.gov/"
       purpose: "tropical cyclone and disturbance context when relevant"

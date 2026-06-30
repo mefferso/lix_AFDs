@@ -5,7 +5,9 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 
-PROMPT_PATH = Path(__file__).resolve().parents[1] / "prompts" / "afd_prompt.md"
+ROOT = Path(__file__).resolve().parents[1]
+PROMPT_PATH = ROOT / "prompts" / "afd_prompt.md"
+REVIEW_PROMPT_PATH = ROOT / "prompts" / "review_package_prompt.md"
 
 
 def _read_text_if_exists(path: Path, max_chars: int = 25000) -> str:
@@ -37,6 +39,38 @@ def _relative_inventory(package_dir: Path) -> list[dict]:
     return items
 
 
+def _status_counts(items: list[dict] | None) -> dict:
+    counts = {"ok": 0, "error": 0, "other": 0}
+    if not isinstance(items, list):
+        return counts
+    for item in items:
+        status = item.get("status")
+        if status == "ok":
+            counts["ok"] += 1
+        elif status == "error":
+            counts["error"] += 1
+        else:
+            counts["other"] += 1
+    return counts
+
+
+def _first_lines_from_external(package_dir: Path, external_manifest: list[dict] | None, max_chars_each: int = 4000) -> str:
+    if not isinstance(external_manifest, list):
+        return "[no external source manifest found]"
+
+    chunks = []
+    for item in external_manifest:
+        if item.get("status") != "ok":
+            chunks.append(f"## {item.get('name')}\nERROR: {item.get('error', 'unknown error')}\n")
+            continue
+        rel = item.get("path")
+        if not rel:
+            continue
+        text = _read_text_if_exists(package_dir / rel, max_chars=max_chars_each)
+        chunks.append(f"## {item.get('name')}\nPurpose: {item.get('purpose')}\nSource: {item.get('url')}\n\n```text\n{text}\n```\n")
+    return "\n".join(chunks)
+
+
 def build_ai_context(package_dir: Path, config: dict) -> None:
     office = config["office"]
     now_utc = datetime.now(timezone.utc).isoformat()
@@ -44,6 +78,12 @@ def build_ai_context(package_dir: Path, config: dict) -> None:
     obs_summary_path = package_dir / "observations" / "latest_surface_obs_summary.json"
     text_manifest_path = package_dir / "text_products" / "text_product_manifest.json"
     screenshot_manifest_path = package_dir / "screenshots" / "screenshot_manifest.json"
+    external_manifest_path = package_dir / "external_sources" / "external_sources_manifest.json"
+
+    obs_summary = _load_json_if_exists(obs_summary_path)
+    text_manifest = _load_json_if_exists(text_manifest_path)
+    screenshot_manifest = _load_json_if_exists(screenshot_manifest_path)
+    external_manifest = _load_json_if_exists(external_manifest_path)
 
     manifest = {
         "created_utc": now_utc,
@@ -51,18 +91,47 @@ def build_ai_context(package_dir: Path, config: dict) -> None:
         "files": _relative_inventory(package_dir),
         "surface_obs_summary": "observations/latest_surface_obs_summary.json",
         "text_product_manifest": "text_products/text_product_manifest.json",
+        "external_sources_manifest": "external_sources/external_sources_manifest.json",
         "screenshot_manifest": "screenshots/screenshot_manifest.json",
         "prompt": "prompts/afd_prompt.md",
+        "review_prompt": "prompts/review_package_prompt.md",
     }
 
     (package_dir / "manifest.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
 
     prompt_text = _read_text_if_exists(PROMPT_PATH)
+    review_prompt_text = _read_text_if_exists(REVIEW_PROMPT_PATH)
     previous_afd = _read_text_if_exists(package_dir / "text_products" / "previous_afd.txt")
     hwo = _read_text_if_exists(package_dir / "text_products" / "hwo.txt")
-    obs_summary = _load_json_if_exists(obs_summary_path)
-    text_manifest = _load_json_if_exists(text_manifest_path)
-    screenshot_manifest = _load_json_if_exists(screenshot_manifest_path)
+    external_excerpt = _first_lines_from_external(package_dir, external_manifest)
+
+    obs_count = len(obs_summary.get("stations", [])) if isinstance(obs_summary, dict) else 0
+    obs_error_count = len(obs_summary.get("errors", [])) if isinstance(obs_summary, dict) else 0
+    screenshot_counts = _status_counts(screenshot_manifest)
+    external_counts = _status_counts(external_manifest)
+
+    review_lines = []
+    review_lines.append("# AFD Package Review")
+    review_lines.append("")
+    review_lines.append(f"Created UTC: {now_utc}")
+    review_lines.append(f"Office: {office.get('wfo')} - {office.get('cwa_name')}")
+    review_lines.append("")
+    review_lines.append("## Quick counts")
+    review_lines.append("")
+    review_lines.append(f"- Surface obs stations collected: {obs_count}")
+    review_lines.append(f"- Surface obs station errors: {obs_error_count}")
+    review_lines.append(f"- External text sources OK/errors: {external_counts['ok']}/{external_counts['error']}")
+    review_lines.append(f"- Screenshots OK/errors: {screenshot_counts['ok']}/{screenshot_counts['error']}")
+    review_lines.append("")
+    review_lines.append("## Suggested AI review prompt")
+    review_lines.append("")
+    review_lines.append(review_prompt_text)
+    review_lines.append("")
+    review_lines.append("## Human note")
+    review_lines.append("")
+    review_lines.append("If this package is missing radar/satellite/model/sounding context, do not let the AI write with fake confidence. Use it as a starting point only.")
+    review_lines.append("")
+    (package_dir / "package_review.md").write_text("\n".join(review_lines), encoding="utf-8")
 
     md = []
     md.append("# AFD Input Package")
@@ -75,6 +144,13 @@ def build_ai_context(package_dir: Path, config: dict) -> None:
     md.append("")
     md.append(prompt_text)
     md.append("")
+    md.append("## Package quick counts")
+    md.append("")
+    md.append(f"- Surface obs stations collected: {obs_count}")
+    md.append(f"- Surface obs station errors: {obs_error_count}")
+    md.append(f"- External text sources OK/errors: {external_counts['ok']}/{external_counts['error']}")
+    md.append(f"- Screenshots OK/errors: {screenshot_counts['ok']}/{screenshot_counts['error']}")
+    md.append("")
     md.append("## Surface observations summary")
     md.append("")
     md.append("```json")
@@ -85,6 +161,12 @@ def build_ai_context(package_dir: Path, config: dict) -> None:
     md.append("")
     md.append("```json")
     md.append(json.dumps(text_manifest, indent=2) if text_manifest is not None else "{}")
+    md.append("```")
+    md.append("")
+    md.append("## External source manifest")
+    md.append("")
+    md.append("```json")
+    md.append(json.dumps(external_manifest, indent=2) if external_manifest is not None else "[]")
     md.append("```")
     md.append("")
     md.append("## Screenshot manifest")
@@ -104,6 +186,10 @@ def build_ai_context(package_dir: Path, config: dict) -> None:
     md.append("```text")
     md.append(hwo)
     md.append("```")
+    md.append("")
+    md.append("## External source excerpts")
+    md.append("")
+    md.append(external_excerpt)
     md.append("")
     md.append("## Human forecaster reminder")
     md.append("")
