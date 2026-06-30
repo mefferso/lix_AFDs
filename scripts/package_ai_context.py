@@ -71,6 +71,12 @@ def _first_lines_from_external(package_dir: Path, external_manifest: list[dict] 
     return "\n".join(chunks)
 
 
+def _sounding_status(sounding_manifest: dict | None) -> str:
+    if not isinstance(sounding_manifest, dict):
+        return "missing"
+    return str(sounding_manifest.get("status", "unknown"))
+
+
 def build_ai_context(package_dir: Path, config: dict) -> None:
     office = config["office"]
     now_utc = datetime.now(timezone.utc).isoformat()
@@ -79,11 +85,16 @@ def build_ai_context(package_dir: Path, config: dict) -> None:
     text_manifest_path = package_dir / "text_products" / "text_product_manifest.json"
     screenshot_manifest_path = package_dir / "screenshots" / "screenshot_manifest.json"
     external_manifest_path = package_dir / "external_sources" / "external_sources_manifest.json"
+    sounding_manifest_path = package_dir / "soundings" / "sounding_manifest.json"
+    sounding_summary_path = package_dir / "soundings" / "sounding_summary.json"
+    sounding_summary_md_path = package_dir / "soundings" / "sounding_summary.md"
 
     obs_summary = _load_json_if_exists(obs_summary_path)
     text_manifest = _load_json_if_exists(text_manifest_path)
     screenshot_manifest = _load_json_if_exists(screenshot_manifest_path)
     external_manifest = _load_json_if_exists(external_manifest_path)
+    sounding_manifest = _load_json_if_exists(sounding_manifest_path)
+    sounding_summary = _load_json_if_exists(sounding_summary_path)
 
     manifest = {
         "created_utc": now_utc,
@@ -92,6 +103,8 @@ def build_ai_context(package_dir: Path, config: dict) -> None:
         "surface_obs_summary": "observations/latest_surface_obs_summary.json",
         "text_product_manifest": "text_products/text_product_manifest.json",
         "external_sources_manifest": "external_sources/external_sources_manifest.json",
+        "sounding_manifest": "soundings/sounding_manifest.json",
+        "sounding_summary": "soundings/sounding_summary.json",
         "screenshot_manifest": "screenshots/screenshot_manifest.json",
         "prompt": "prompts/afd_prompt.md",
         "review_prompt": "prompts/review_package_prompt.md",
@@ -104,11 +117,13 @@ def build_ai_context(package_dir: Path, config: dict) -> None:
     previous_afd = _read_text_if_exists(package_dir / "text_products" / "previous_afd.txt")
     hwo = _read_text_if_exists(package_dir / "text_products" / "hwo.txt")
     external_excerpt = _first_lines_from_external(package_dir, external_manifest)
+    sounding_md = _read_text_if_exists(sounding_summary_md_path, max_chars=18000)
 
     obs_count = len(obs_summary.get("stations", [])) if isinstance(obs_summary, dict) else 0
     obs_error_count = len(obs_summary.get("errors", [])) if isinstance(obs_summary, dict) else 0
     screenshot_counts = _status_counts(screenshot_manifest)
     external_counts = _status_counts(external_manifest)
+    sounding_state = _sounding_status(sounding_manifest)
 
     review_lines = []
     review_lines.append("# AFD Package Review")
@@ -122,6 +137,13 @@ def build_ai_context(package_dir: Path, config: dict) -> None:
     review_lines.append(f"- Surface obs station errors: {obs_error_count}")
     review_lines.append(f"- External text sources OK/errors: {external_counts['ok']}/{external_counts['error']}")
     review_lines.append(f"- Screenshots OK/errors: {screenshot_counts['ok']}/{screenshot_counts['error']}")
+    review_lines.append(f"- Sounding status: {sounding_state}")
+    review_lines.append("")
+    review_lines.append("## Sounding summary")
+    review_lines.append("")
+    review_lines.append("```json")
+    review_lines.append(json.dumps(sounding_summary, indent=2) if sounding_summary is not None else "{}")
+    review_lines.append("```")
     review_lines.append("")
     review_lines.append("## Suggested AI review prompt")
     review_lines.append("")
@@ -150,12 +172,17 @@ def build_ai_context(package_dir: Path, config: dict) -> None:
     md.append(f"- Surface obs station errors: {obs_error_count}")
     md.append(f"- External text sources OK/errors: {external_counts['ok']}/{external_counts['error']}")
     md.append(f"- Screenshots OK/errors: {screenshot_counts['ok']}/{screenshot_counts['error']}")
+    md.append(f"- Sounding status: {sounding_state}")
     md.append("")
     md.append("## Surface observations summary")
     md.append("")
     md.append("```json")
     md.append(json.dumps(obs_summary, indent=2) if obs_summary is not None else "{}")
     md.append("```")
+    md.append("")
+    md.append("## Sounding summary")
+    md.append("")
+    md.append(sounding_md)
     md.append("")
     md.append("## Text product manifest")
     md.append("")

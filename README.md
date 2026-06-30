@@ -9,6 +9,7 @@ This is a forecaster helper, not an automated product generator. The goal is to 
 - active alerts
 - SPC/WPC/NHC external text/web context
 - SPC/WPC/NHC screenshots
+- observed upper-air sounding text and parsed ingredient summary
 - model/source placeholders ready for expansion
 - a structured `manifest.json`
 - a structured `package_review.md`
@@ -28,6 +29,7 @@ scripts/run_pipeline.py                main pipeline runner
 scripts/collect_observed.py            METAR/latest obs collection from api.weather.gov
 scripts/collect_text_products.py       previous AFD/HWO/alerts collection
 scripts/collect_external_sources.py    SPC/WPC/NHC web/text source collector
+scripts/collect_soundings.py           upper-air sounding text collector/parser
 scripts/collect_screenshots.py         Playwright screenshot collector
 scripts/package_ai_context.py          builds manifest, review, and AI context files
 output/.gitkeep                        placeholder only; generated files are ignored
@@ -69,6 +71,7 @@ Open the downloaded artifact and check:
 package_review.md
 ai_context.md
 manifest.json
+soundings/sounding_summary.md
 ```
 
 Start with `package_review.md`. It is the quick sanity check. Then feed `ai_context.md` to an AI for review or drafting.
@@ -77,13 +80,14 @@ Start with `package_review.md`. It is the quick sanity check. Then feed `ai_cont
 
 1. **Structured data first.** JSON/text is better than screenshots when the AI needs to reason.
 2. **Screenshots second.** Use images for context that is hard to get cleanly another way.
-3. **AI package last.** The useful part is `ai_context.md` + `manifest.json`, not a random pile of weather PNGs.
-4. **Human review always.** The draft is a starting point, not operational truth.
+3. **Ingredient summaries matter.** Sounding/model fields should be summarized into meteorological parameters the AI can use safely.
+4. **AI package last.** The useful part is `ai_context.md` + `manifest.json`, not a random pile of weather PNGs.
+5. **Human review always.** The draft is a starting point, not operational truth.
 
 ## Next improvements
 
 - Add NOAA/NOMADS model field downloading/subsetting.
 - Add HRRR/RAP/NBM/HREF summary extraction.
-- Add sounding text/BUFKIT-style summaries.
+- Add model sounding or forecast sounding summaries.
 - Add optional OpenAI/Gemini API draft generation step.
 - Add simple HTML dashboard for latest package review.

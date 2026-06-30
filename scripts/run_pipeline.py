@@ -8,6 +8,7 @@ import yaml
 from collect_observed import collect_observed_package
 from collect_text_products import collect_text_products
 from collect_external_sources import collect_external_text_sources
+from collect_soundings import collect_soundings
 from collect_screenshots import collect_screenshots
 from package_ai_context import build_ai_context
 
@@ -32,6 +33,7 @@ def main() -> None:
     collect_observed_package(package_dir, config)
     collect_text_products(package_dir, config)
     collect_external_text_sources(package_dir, config)
+    collect_soundings(package_dir, config)
     collect_screenshots(package_dir, config)
     build_ai_context(package_dir, config)
 

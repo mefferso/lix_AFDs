@@ -5,7 +5,7 @@ office:
   timezone: America/Chicago
 
 nws_api:
-  user_agent: "lix-afd-assistant/0.2 michael.wfo-lix.local"
+  user_agent: "lix-afd-assistant/0.3 michael.wfo-lix.local"
   base_url: "https://api.weather.gov"
 
 observations:
@@ -20,6 +20,15 @@ observations:
     - KHSA
     - KMCB
     - KBVE
+
+upper_air:
+  enabled: true
+  # KLIX/Slidell upper-air WMO identifier. If this source fails, the workflow writes an error file but stays green.
+  station_name: KLIX
+  station_wmo: "72233"
+  source: "University of Wyoming upper-air text listing"
+  region: "naconf"
+  cycles_to_try: 4
 
 text_products:
   # These use api.weather.gov product endpoints.
