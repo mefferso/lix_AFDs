@@ -5,7 +5,7 @@ office:
   timezone: America/Chicago
 
 nws_api:
-  user_agent: "lix-afd-assistant/0.5 michael.wfo-lix.local"
+  user_agent: "lix-afd-assistant/0.7 michael.wfo-lix.local"
   base_url: "https://api.weather.gov"
 
 observations:
@@ -19,11 +19,9 @@ observations:
     - KHUM
     - KHSA
     - KMCB
-    - KBVE
 
 upper_air:
   enabled: false
-  # KLIX/Slidell upper-air WMO identifier. If this source fails, the workflow writes an error file but stays green.
   station_name: KLIX
   station_wmo: "72233"
   station_ids_to_try:
@@ -35,13 +33,11 @@ upper_air:
   request_timeout_seconds: 8
 
 text_products:
-  # These use api.weather.gov product endpoints.
   previous_afd:
     type: AFD
     location: LIX
 
 alerts:
-  # Broad pull for LA/MS active alerts. Filter later if desired.
   areas:
     - LA
     - MS
@@ -59,14 +55,11 @@ external_text_sources:
       url: "https://www.spc.noaa.gov/products/outlook/day3otlk.txt"
       purpose: "SPC Day 3 convective outlook text"
     nhc_atlantic_two:
-      url: "https://www.nhc.noaa.gov/text/MIATWOAT.shtml"
-      purpose: "NHC Atlantic Tropical Weather Outlook"
+      url: "https://www.nhc.noaa.gov/text/MIATWOAT.shtml?text"
+      purpose: "NHC Atlantic Tropical Weather Outlook text version"
     nhc_gulf_twd:
-      url: "https://www.nhc.noaa.gov/text/MIATWDAT.shtml"
-      purpose: "NHC Tropical Weather Discussion including Gulf context"
-    wpc_mpd_index:
-      url: "https://www.wpc.ncep.noaa.gov/metwatch/metwatch_mpd_multi.php"
-      purpose: "WPC mesoscale precipitation discussion index/context"
+      url: "https://www.nhc.noaa.gov/text/MIATWDAT.shtml?text"
+      purpose: "NHC Tropical Weather Discussion text version with Gulf context"
 
 screenshots:
   enabled: true
