@@ -77,6 +77,12 @@ def _sounding_status(sounding_manifest: dict | None) -> str:
     return str(sounding_manifest.get("status", "unknown"))
 
 
+def _sounding_markdown(sounding_state: str, sounding_summary_md_path: Path) -> str:
+    if sounding_state == "disabled":
+        return "Observed upper-air sounding collection is disabled for this GitHub workflow because the configured source was unreliable from GitHub Actions. Add observed/model sounding context manually if needed."
+    return _read_text_if_exists(sounding_summary_md_path, max_chars=18000)
+
+
 def build_ai_context(package_dir: Path, config: dict) -> None:
     office = config["office"]
     now_utc = datetime.now(timezone.utc).isoformat()
@@ -116,13 +122,13 @@ def build_ai_context(package_dir: Path, config: dict) -> None:
     review_prompt_text = _read_text_if_exists(REVIEW_PROMPT_PATH)
     previous_afd = _read_text_if_exists(package_dir / "text_products" / "previous_afd.txt")
     external_excerpt = _first_lines_from_external(package_dir, external_manifest)
-    sounding_md = _read_text_if_exists(sounding_summary_md_path, max_chars=18000)
 
     obs_count = len(obs_summary.get("stations", [])) if isinstance(obs_summary, dict) else 0
     obs_error_count = len(obs_summary.get("errors", [])) if isinstance(obs_summary, dict) else 0
     screenshot_counts = _status_counts(screenshot_manifest)
     external_counts = _status_counts(external_manifest)
     sounding_state = _sounding_status(sounding_manifest)
+    sounding_md = _sounding_markdown(sounding_state, sounding_summary_md_path)
 
     review_lines = []
     review_lines.append("# AFD Package Review")
