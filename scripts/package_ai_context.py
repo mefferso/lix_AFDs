@@ -112,9 +112,10 @@ def _write_start_here(
     lines.append("")
     lines.append("1. Open `package_review.md` first and make sure the quick counts look clean.")
     lines.append("2. Open `model_context/model_notes_template.md` and add quick HRRR/RAP/NBM/HREF/WPC notes if model guidance matters for this AFD.")
-    lines.append("3. Upload `ai_context.md` to ChatGPT.")
-    lines.append("4. Also upload or paste the filled model notes when you have them.")
-    lines.append("5. Ask for either a package review or a first-pass AFD draft.")
+    lines.append("3. Open `current_trends_context/current_trends_notes_template.md` and add live-trend notes when recent observational trends matter.")
+    lines.append("4. Upload `ai_context.md` to ChatGPT.")
+    lines.append("5. Also upload or paste any filled model/current-trends notes.")
+    lines.append("6. Ask for either a package review or a first-pass AFD draft.")
     lines.append("")
     lines.append("## What to upload to ChatGPT")
     lines.append("")
@@ -124,6 +125,7 @@ def _write_start_here(
     lines.append("package_review.md")
     lines.append("ai_context.md")
     lines.append("model_context/model_notes_template.md  # if filled out")
+    lines.append("current_trends_context/current_trends_notes_template.md  # if filled out")
     lines.append("```")
     lines.append("")
     lines.append("For AFD drafting:")
@@ -131,7 +133,8 @@ def _write_start_here(
     lines.append("```text")
     lines.append("ai_context.md")
     lines.append("model_context/model_notes_template.md  # filled out if possible")
-    lines.append("any radar/satellite/model screenshots you want the AI to see")
+    lines.append("current_trends_context/current_trends_notes_template.md  # filled out if possible")
+    lines.append("any screenshots you want the AI to see")
     lines.append("```")
     lines.append("")
     lines.append("## Suggested prompts")
@@ -145,13 +148,13 @@ def _write_start_here(
     lines.append("Draft:")
     lines.append("")
     lines.append("```text")
-    lines.append("Using this package and my model notes, draft a first-pass LIX AFD. Do not invent missing data. Clearly flag assumptions and items needing human review.")
+    lines.append("Using this package and my notes, draft a first-pass LIX AFD. Do not invent missing data. Clearly flag assumptions and items needing human review.")
     lines.append("```")
     lines.append("")
     lines.append("## Human reminders")
     lines.append("")
     lines.append("- This package is a starting point, not an official forecast decision engine.")
-    lines.append("- Check radar, satellite, AWIPS/local procedures, collaboration notes, current hazards, and latest model guidance before using any generated text.")
+    lines.append("- Check AWIPS/local procedures, collaboration notes, current hazards, latest observational trends, and latest model guidance before using any generated text.")
     lines.append("- Sounding collection is currently disabled in GitHub Actions, so add observed or model sounding context manually when it matters.")
     lines.append("")
     (package_dir / "START_HERE.md").write_text("\n".join(lines), encoding="utf-8")
@@ -215,6 +218,7 @@ def build_ai_context(package_dir: Path, config: dict) -> None:
         "external_sources_manifest": "external_sources/external_sources_manifest.json",
         "model_source_manifest": "model_context/model_source_manifest.json",
         "model_context": "model_context/model_context.md",
+        "current_trends_notes": "current_trends_context/current_trends_notes_template.md",
         "sounding_manifest": "soundings/sounding_manifest.json",
         "sounding_summary": "soundings/sounding_summary.json",
         "screenshot_manifest": "screenshots/screenshot_manifest.json",
@@ -244,6 +248,10 @@ def build_ai_context(package_dir: Path, config: dict) -> None:
     review_lines.append("")
     review_lines.append("Open `START_HERE.md` for the recommended review/drafting workflow.")
     review_lines.append("")
+    review_lines.append("## Supplemental notes")
+    review_lines.append("")
+    review_lines.append("Use `current_trends_context/current_trends_notes_template.md` when recent observational trends matter.")
+    review_lines.append("")
     review_lines.append("## Sounding summary")
     review_lines.append("")
     review_lines.append("```json")
@@ -260,7 +268,7 @@ def build_ai_context(package_dir: Path, config: dict) -> None:
     review_lines.append("")
     review_lines.append("## Human note")
     review_lines.append("")
-    review_lines.append("If this package is missing radar/satellite/model/sounding context, do not let the AI write with fake confidence. Use it as a starting point only.")
+    review_lines.append("If this package is missing model/sounding/current-trend context, do not let the AI write with fake confidence. Use it as a starting point only.")
     review_lines.append("")
     (package_dir / "package_review.md").write_text("\n".join(review_lines), encoding="utf-8")
 
@@ -328,7 +336,7 @@ def build_ai_context(package_dir: Path, config: dict) -> None:
     md.append("")
     md.append("## Human forecaster reminder")
     md.append("")
-    md.append("This package is only a starting point. Check radar, satellite, latest obs, AWIPS/local procedures, collaboration notes, and current hazards before using any generated text.")
+    md.append("This package is only a starting point. Check AWIPS/local procedures, collaboration notes, current hazards, latest observational trends, and latest model guidance before using any generated text.")
     md.append("")
 
     (package_dir / "ai_context.md").write_text("\n".join(md), encoding="utf-8")
