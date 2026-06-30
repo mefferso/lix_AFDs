@@ -22,7 +22,7 @@ observations:
     - KBVE
 
 upper_air:
-  enabled: true
+  enabled: false
   # KLIX/Slidell upper-air WMO identifier. If this source fails, the workflow writes an error file but stays green.
   station_name: KLIX
   station_wmo: "72233"
