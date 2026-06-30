@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.env
+
+# Generated output
+output/latest/
+output/archive/
+*.grib2
+*.idx
+*.nc
+
+# OS/editor junk
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

@@ -1,0 +1,65 @@
+office:
+  wfo: LIX
+  cwa_name: New Orleans/Baton Rouge
+  forecast_area: Southeast Louisiana and southern Mississippi
+  timezone: America/Chicago
+
+nws_api:
+  user_agent: "lix-afd-assistant/0.1 michael.wfo-lix.local"
+  base_url: "https://api.weather.gov"
+
+observations:
+  stations:
+    - KMSY
+    - KNEW
+    - KBTR
+    - KHDC
+    - KGPT
+    - KASD
+    - KHUM
+    - KHSA
+    - KMCB
+    - KBVE
+
+text_products:
+  # These use api.weather.gov product endpoints.
+  previous_afd:
+    type: AFD
+    location: LIX
+  hwo:
+    type: HWO
+    location: LIX
+
+alerts:
+  # Broad pull for LA/MS active alerts. Filter later if desired.
+  areas:
+    - LA
+    - MS
+
+screenshots:
+  enabled: true
+  viewport_width: 1600
+  viewport_height: 1000
+  pages:
+    spc_mesoanalysis:
+      url: "https://www.spc.noaa.gov/exper/mesoanalysis/"
+      purpose: "current instability, shear, boundaries, and mesoscale context"
+    wpc_ero:
+      url: "https://www.wpc.ncep.noaa.gov/qpf/excessive_rainfall_outlook_ero.php"
+      purpose: "excessive rainfall outlook and heavy-rain context"
+    nhc_home:
+      url: "https://www.nhc.noaa.gov/"
+      purpose: "tropical cyclone and disturbance context when relevant"
+
+model_placeholders:
+  # Future: add NOMADS/Herbie/xarray/cfgrib download and summary logic.
+  hrrr:
+    forecast_hours: [0, 3, 6, 12, 18]
+    fields:
+      - reflectivity
+      - qpf
+      - precipitable_water
+      - mlcape
+      - helicity
+      - 850mb_wind
+      - 500mb_height

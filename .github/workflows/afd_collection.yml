@@ -1,0 +1,37 @@
+name: AFD Data Collection
+
+on:
+  workflow_dispatch:
+  schedule:
+    # UTC times. Adjust for shift needs.
+    - cron: "30 8,14,20 * * *"
+
+jobs:
+  collect-afd-data:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Python packages
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          python -m playwright install chromium
+
+      - name: Run AFD input pipeline
+        run: |
+          python scripts/run_pipeline.py
+
+      - name: Upload AFD input package
+        uses: actions/upload-artifact@v4
+        with:
+          name: afd-input-package
+          path: output/latest/
+          retention-days: 7
