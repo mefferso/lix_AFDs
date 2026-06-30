@@ -123,7 +123,8 @@ def collect_soundings(outdir: Path, config: dict) -> None:
 
     user_agent = config["nws_api"]["user_agent"]
     region = cfg.get("region", "naconf")
-    cycles_to_try = int(cfg.get("cycles_to_try", 8))
+    cycles_to_try = int(cfg.get("cycles_to_try", 4))
+    request_timeout = int(cfg.get("request_timeout_seconds", 8))
 
     selected_text = None
     selected_cycle = None
@@ -137,9 +138,10 @@ def collect_soundings(outdir: Path, config: dict) -> None:
                 "cycle_utc": cycle.strftime("%Y-%m-%d %HZ"),
                 "station_id": station_id,
                 "url": url,
+                "timeout_seconds": request_timeout,
             }
             try:
-                raw = get_text(url, user_agent=user_agent, timeout=45)
+                raw = get_text(url, user_agent=user_agent, timeout=request_timeout)
                 text = _strip_html_to_pre_text(raw)
                 valid = _sounding_looks_valid(text)
                 attempt["bytes"] = len(text.encode("utf-8"))
@@ -150,10 +152,14 @@ def collect_soundings(outdir: Path, config: dict) -> None:
                     selected_cycle = cycle
                     selected_url = url
                     selected_station_id = station_id
+                    manifest["attempts"].append(attempt)
+                    break
             except Exception as e:
                 attempt["error"] = str(e)
                 attempt["valid"] = False
             manifest["attempts"].append(attempt)
+        if selected_text is not None:
+            break
 
     if selected_text is None:
         manifest["status"] = "error"
