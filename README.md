@@ -5,11 +5,11 @@ Starter repo for collecting observed/model/weather-context inputs and packaging 
 This is a forecaster helper, not an automated product generator. The goal is to build a repeatable data package containing:
 
 - latest surface observations
-- recent NWS text products
+- latest AFD
 - active alerts
 - SPC/WPC/NHC external text/web context
 - SPC/WPC/NHC screenshots
-- observed upper-air sounding text and parsed ingredient summary
+- observed upper-air sounding text and parsed ingredient summary when available
 - model/source placeholders ready for expansion
 - a structured `manifest.json`
 - a structured `package_review.md`
@@ -27,7 +27,7 @@ prompts/afd_prompt.md                  reusable AFD drafting prompt
 prompts/review_package_prompt.md       prompt to critique package quality before drafting
 scripts/run_pipeline.py                main pipeline runner
 scripts/collect_observed.py            METAR/latest obs collection from api.weather.gov
-scripts/collect_text_products.py       previous AFD/HWO/alerts collection
+scripts/collect_text_products.py       latest AFD/alerts collection
 scripts/collect_external_sources.py    SPC/WPC/NHC web/text source collector
 scripts/collect_soundings.py           upper-air sounding text collector/parser
 scripts/collect_screenshots.py         Playwright screenshot collector
@@ -72,6 +72,7 @@ package_review.md
 ai_context.md
 manifest.json
 soundings/sounding_summary.md
+soundings/sounding_manifest.json
 ```
 
 Start with `package_review.md`. It is the quick sanity check. Then feed `ai_context.md` to an AI for review or drafting.

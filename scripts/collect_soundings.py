@@ -31,7 +31,7 @@ def _strip_html_to_pre_text(raw: str) -> str:
     return html.unescape(text).strip()
 
 
-def _build_uwyo_url(cycle: datetime, region: str, station_wmo: str) -> str:
+def _build_uwyo_url(cycle: datetime, region: str, station_id: str) -> str:
     from_to = f"{cycle.day:02d}{cycle.hour:02d}"
     return (
         f"{UWYO_URL}?region={region}"
@@ -39,7 +39,7 @@ def _build_uwyo_url(cycle: datetime, region: str, station_wmo: str) -> str:
         f"&YEAR={cycle.year:04d}"
         f"&MONTH={cycle.month:02d}"
         f"&FROM={from_to}&TO={from_to}"
-        f"&STNM={station_wmo}"
+        f"&STNM={station_id}"
     )
 
 
@@ -82,8 +82,19 @@ def _mm_to_inches(value: float | None) -> float | None:
 
 
 def _sounding_looks_valid(text: str) -> bool:
-    required = ["PRES", "HGHT", "TEMP", "DWPT"]
-    return all(token in text for token in required) and len(text) > 1000
+    upper = text.upper()
+    table_tokens = ["PRES", "HGHT", "TEMP", "DWPT"]
+    has_table = all(token in upper for token in table_tokens)
+    has_indices = "STATION INFORMATION" in upper or "LIFTED INDEX" in upper or "PRECIPITABLE WATER" in upper
+    not_empty_error = "CAN'T GET" not in upper and "NO DATA" not in upper and "ERROR" not in upper[:500]
+    return len(text) > 500 and not_empty_error and (has_table or has_indices)
+
+
+def _preview(text: str, limit: int = 500) -> str:
+    cleaned = "\n".join(line.rstrip() for line in text.splitlines()[:20])
+    if len(cleaned) > limit:
+        return cleaned[:limit] + "..."
+    return cleaned
 
 
 def collect_soundings(outdir: Path, config: dict) -> None:
@@ -91,11 +102,15 @@ def collect_soundings(outdir: Path, config: dict) -> None:
     sound_dir = outdir / "soundings"
     sound_dir.mkdir(exist_ok=True)
 
+    station_ids = cfg.get("station_ids_to_try") or [cfg.get("station_wmo", "72233"), cfg.get("station_name", "KLIX")]
+    station_ids = [str(s) for s in station_ids if s]
+
     manifest: dict = {
         "enabled": cfg.get("enabled", True),
         "source": cfg.get("source"),
         "station_name": cfg.get("station_name"),
         "station_wmo": cfg.get("station_wmo"),
+        "station_ids_to_try": station_ids,
         "attempts": [],
         "selected": None,
         "status": "not_run",
@@ -107,38 +122,43 @@ def collect_soundings(outdir: Path, config: dict) -> None:
         return
 
     user_agent = config["nws_api"]["user_agent"]
-    station_wmo = str(cfg.get("station_wmo", "72233"))
     region = cfg.get("region", "naconf")
-    cycles_to_try = int(cfg.get("cycles_to_try", 4))
+    cycles_to_try = int(cfg.get("cycles_to_try", 8))
 
     selected_text = None
     selected_cycle = None
     selected_url = None
+    selected_station_id = None
 
     for cycle in _candidate_cycles(datetime.now(timezone.utc), cycles_to_try):
-        url = _build_uwyo_url(cycle, region=region, station_wmo=station_wmo)
-        attempt = {
-            "cycle_utc": cycle.strftime("%Y-%m-%d %HZ"),
-            "url": url,
-        }
-        try:
-            raw = get_text(url, user_agent=user_agent, timeout=45)
-            text = _strip_html_to_pre_text(raw)
-            attempt["bytes"] = len(text.encode("utf-8"))
-            attempt["valid"] = _sounding_looks_valid(text)
-            if attempt["valid"] and selected_text is None:
-                selected_text = text
-                selected_cycle = cycle
-                selected_url = url
-        except Exception as e:
-            attempt["error"] = str(e)
-            attempt["valid"] = False
-        manifest["attempts"].append(attempt)
+        for station_id in station_ids:
+            url = _build_uwyo_url(cycle, region=region, station_id=station_id)
+            attempt = {
+                "cycle_utc": cycle.strftime("%Y-%m-%d %HZ"),
+                "station_id": station_id,
+                "url": url,
+            }
+            try:
+                raw = get_text(url, user_agent=user_agent, timeout=45)
+                text = _strip_html_to_pre_text(raw)
+                valid = _sounding_looks_valid(text)
+                attempt["bytes"] = len(text.encode("utf-8"))
+                attempt["valid"] = valid
+                attempt["preview"] = _preview(text)
+                if valid and selected_text is None:
+                    selected_text = text
+                    selected_cycle = cycle
+                    selected_url = url
+                    selected_station_id = station_id
+            except Exception as e:
+                attempt["error"] = str(e)
+                attempt["valid"] = False
+            manifest["attempts"].append(attempt)
 
     if selected_text is None:
         manifest["status"] = "error"
         (sound_dir / "sounding_ERROR.txt").write_text(
-            "No valid sounding found from configured source/cycles. See sounding_manifest.json for attempts.\n",
+            "No valid sounding found from configured source/cycles. See sounding_manifest.json for attempts and source previews.\n",
             encoding="utf-8",
         )
         (sound_dir / "sounding_manifest.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
@@ -153,7 +173,8 @@ def collect_soundings(outdir: Path, config: dict) -> None:
     summary = {
         "status": "ok",
         "station_name": cfg.get("station_name"),
-        "station_wmo": station_wmo,
+        "station_wmo": cfg.get("station_wmo"),
+        "station_id_used": selected_station_id,
         "cycle_utc": selected_cycle.strftime("%Y-%m-%d %HZ"),
         "source_url": selected_url,
         "raw_text_path": f"soundings/{raw_path.name}",
@@ -174,6 +195,7 @@ def collect_soundings(outdir: Path, config: dict) -> None:
     md.append("# Upper-Air Sounding Summary")
     md.append("")
     md.append(f"Station: {summary['station_name']} / {summary['station_wmo']}")
+    md.append(f"Station ID used: {summary['station_id_used']}")
     md.append(f"Cycle: {summary['cycle_utc']}")
     md.append(f"Source: {summary['source_url']}")
     md.append("")
