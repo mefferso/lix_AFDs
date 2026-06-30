@@ -8,6 +8,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 PROMPT_PATH = ROOT / "prompts" / "afd_prompt.md"
 REVIEW_PROMPT_PATH = ROOT / "prompts" / "review_package_prompt.md"
+MODEL_REVIEW_PROMPT_PATH = ROOT / "prompts" / "model_review_prompt.md"
 
 
 def _read_text_if_exists(path: Path, max_chars: int = 25000) -> str:
@@ -94,6 +95,8 @@ def build_ai_context(package_dir: Path, config: dict) -> None:
     sounding_manifest_path = package_dir / "soundings" / "sounding_manifest.json"
     sounding_summary_path = package_dir / "soundings" / "sounding_summary.json"
     sounding_summary_md_path = package_dir / "soundings" / "sounding_summary.md"
+    model_manifest_path = package_dir / "model_context" / "model_source_manifest.json"
+    model_context_md_path = package_dir / "model_context" / "model_context.md"
 
     obs_summary = _load_json_if_exists(obs_summary_path)
     text_manifest = _load_json_if_exists(text_manifest_path)
@@ -101,6 +104,7 @@ def build_ai_context(package_dir: Path, config: dict) -> None:
     external_manifest = _load_json_if_exists(external_manifest_path)
     sounding_manifest = _load_json_if_exists(sounding_manifest_path)
     sounding_summary = _load_json_if_exists(sounding_summary_path)
+    model_manifest = _load_json_if_exists(model_manifest_path)
 
     manifest = {
         "created_utc": now_utc,
@@ -109,24 +113,30 @@ def build_ai_context(package_dir: Path, config: dict) -> None:
         "surface_obs_summary": "observations/latest_surface_obs_summary.json",
         "text_product_manifest": "text_products/text_product_manifest.json",
         "external_sources_manifest": "external_sources/external_sources_manifest.json",
+        "model_source_manifest": "model_context/model_source_manifest.json",
+        "model_context": "model_context/model_context.md",
         "sounding_manifest": "soundings/sounding_manifest.json",
         "sounding_summary": "soundings/sounding_summary.json",
         "screenshot_manifest": "screenshots/screenshot_manifest.json",
         "prompt": "prompts/afd_prompt.md",
         "review_prompt": "prompts/review_package_prompt.md",
+        "model_review_prompt": "prompts/model_review_prompt.md",
     }
 
     (package_dir / "manifest.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
 
     prompt_text = _read_text_if_exists(PROMPT_PATH)
     review_prompt_text = _read_text_if_exists(REVIEW_PROMPT_PATH)
+    model_review_prompt_text = _read_text_if_exists(MODEL_REVIEW_PROMPT_PATH)
     previous_afd = _read_text_if_exists(package_dir / "text_products" / "previous_afd.txt")
     external_excerpt = _first_lines_from_external(package_dir, external_manifest)
+    model_context_md = _read_text_if_exists(model_context_md_path, max_chars=18000)
 
     obs_count = len(obs_summary.get("stations", [])) if isinstance(obs_summary, dict) else 0
     obs_error_count = len(obs_summary.get("errors", [])) if isinstance(obs_summary, dict) else 0
     screenshot_counts = _status_counts(screenshot_manifest)
     external_counts = _status_counts(external_manifest)
+    model_source_count = len(model_manifest) if isinstance(model_manifest, list) else 0
     sounding_state = _sounding_status(sounding_manifest)
     sounding_md = _sounding_markdown(sounding_state, sounding_summary_md_path)
 
@@ -142,6 +152,7 @@ def build_ai_context(package_dir: Path, config: dict) -> None:
     review_lines.append(f"- Surface obs station errors: {obs_error_count}")
     review_lines.append(f"- External text sources OK/errors: {external_counts['ok']}/{external_counts['error']}")
     review_lines.append(f"- Screenshots OK/errors: {screenshot_counts['ok']}/{screenshot_counts['error']}")
+    review_lines.append(f"- Model context sources: {model_source_count}")
     review_lines.append(f"- Sounding status: {sounding_state}")
     review_lines.append("")
     review_lines.append("## Sounding summary")
@@ -149,6 +160,10 @@ def build_ai_context(package_dir: Path, config: dict) -> None:
     review_lines.append("```json")
     review_lines.append(json.dumps(sounding_summary, indent=2) if sounding_summary is not None else "{}")
     review_lines.append("```")
+    review_lines.append("")
+    review_lines.append("## Model context review prompt")
+    review_lines.append("")
+    review_lines.append(model_review_prompt_text)
     review_lines.append("")
     review_lines.append("## Suggested AI review prompt")
     review_lines.append("")
@@ -177,6 +192,7 @@ def build_ai_context(package_dir: Path, config: dict) -> None:
     md.append(f"- Surface obs station errors: {obs_error_count}")
     md.append(f"- External text sources OK/errors: {external_counts['ok']}/{external_counts['error']}")
     md.append(f"- Screenshots OK/errors: {screenshot_counts['ok']}/{screenshot_counts['error']}")
+    md.append(f"- Model context sources: {model_source_count}")
     md.append(f"- Sounding status: {sounding_state}")
     md.append("")
     md.append("## Surface observations summary")
@@ -188,6 +204,10 @@ def build_ai_context(package_dir: Path, config: dict) -> None:
     md.append("## Sounding summary")
     md.append("")
     md.append(sounding_md)
+    md.append("")
+    md.append("## Model context")
+    md.append("")
+    md.append(model_context_md)
     md.append("")
     md.append("## Text product manifest")
     md.append("")
