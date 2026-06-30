@@ -5,7 +5,7 @@ office:
   timezone: America/Chicago
 
 nws_api:
-  user_agent: "lix-afd-assistant/0.7 michael.wfo-lix.local"
+  user_agent: "lix-afd-assistant/0.8 michael.wfo-lix.local"
   base_url: "https://api.weather.gov"
 
 observations:
@@ -60,6 +60,31 @@ external_text_sources:
     nhc_gulf_twd:
       url: "https://www.nhc.noaa.gov/text/MIATWDAT.shtml?text"
       purpose: "NHC Tropical Weather Discussion text version with Gulf context"
+
+model_context:
+  enabled: true
+  sources:
+    spc_mesoanalysis:
+      url: "https://www.spc.noaa.gov/exper/mesoanalysis/"
+      purpose: "analysis fields for instability, shear, boundaries, low-level winds, and mesoscale context"
+    hrrr_pivotal:
+      url: "https://www.pivotalweather.com/model.php?m=hrrr"
+      purpose: "HRRR reflectivity, QPF, instability, wind, and mesoscale trends"
+    rap_pivotal:
+      url: "https://www.pivotalweather.com/model.php?m=rap"
+      purpose: "RAP mass fields, instability, moisture, wind, and short-term synoptic/mesoscale trends"
+    nbm_weatherbell_placeholder:
+      url: "https://www.weather.gov/mdl/nbm_home"
+      purpose: "NBM forecast/probabilistic guidance reference; replace with local/AWIPS source as needed"
+    href_spc:
+      url: "https://www.spc.noaa.gov/exper/href/"
+      purpose: "HREF neighborhood probability and CAM ensemble context"
+    wpc_qpf:
+      url: "https://www.wpc.ncep.noaa.gov/qpf/qpf2.shtml"
+      purpose: "WPC QPF forecast context"
+    wpc_ero:
+      url: "https://www.wpc.ncep.noaa.gov/qpf/excessive_rainfall_outlook_ero.php"
+      purpose: "WPC excessive rainfall outlook context"
 
 screenshots:
   enabled: true
