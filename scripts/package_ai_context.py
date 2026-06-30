@@ -111,10 +111,10 @@ def _write_start_here(
     lines.append("## Fast workflow")
     lines.append("")
     lines.append("1. Open `package_review.md` first and make sure the quick counts look clean.")
-    lines.append("2. Open `model_context/model_notes_template.md` and add quick HRRR/RAP/NBM/HREF/WPC notes if model guidance matters for this AFD.")
-    lines.append("3. Open `current_trends_context/current_trends_notes_template.md` and add live-trend notes when recent observational trends matter.")
+    lines.append("2. Open `forecast_notes_form.html` if you want a guided form. Answer only the questions that matter, then copy or download the generated notes.")
+    lines.append("3. Or use the manual templates: `model_context/model_notes_template.md` and `current_trends_context/current_trends_notes_template.md`.")
     lines.append("4. Upload `ai_context.md` to ChatGPT.")
-    lines.append("5. Also upload or paste any filled model/current-trends notes.")
+    lines.append("5. Also upload or paste any generated notes.")
     lines.append("6. Ask for either a package review or a first-pass AFD draft.")
     lines.append("")
     lines.append("## What to upload to ChatGPT")
@@ -124,16 +124,16 @@ def _write_start_here(
     lines.append("```text")
     lines.append("package_review.md")
     lines.append("ai_context.md")
-    lines.append("model_context/model_notes_template.md  # if filled out")
-    lines.append("current_trends_context/current_trends_notes_template.md  # if filled out")
+    lines.append("forecaster_notes.md  # from forecast_notes_form.html, if used")
+    lines.append("model_context/model_notes_template.md  # if filled out manually")
+    lines.append("current_trends_context/current_trends_notes_template.md  # if filled out manually")
     lines.append("```")
     lines.append("")
     lines.append("For AFD drafting:")
     lines.append("")
     lines.append("```text")
     lines.append("ai_context.md")
-    lines.append("model_context/model_notes_template.md  # filled out if possible")
-    lines.append("current_trends_context/current_trends_notes_template.md  # filled out if possible")
+    lines.append("forecaster_notes.md  # from forecast_notes_form.html, if used")
     lines.append("any screenshots you want the AI to see")
     lines.append("```")
     lines.append("")
@@ -213,6 +213,7 @@ def build_ai_context(package_dir: Path, config: dict) -> None:
         "office": office,
         "files": _relative_inventory(package_dir),
         "start_here": "START_HERE.md",
+        "forecast_notes_form": "forecast_notes_form.html",
         "surface_obs_summary": "observations/latest_surface_obs_summary.json",
         "text_product_manifest": "text_products/text_product_manifest.json",
         "external_sources_manifest": "external_sources/external_sources_manifest.json",
@@ -250,6 +251,7 @@ def build_ai_context(package_dir: Path, config: dict) -> None:
     review_lines.append("")
     review_lines.append("## Supplemental notes")
     review_lines.append("")
+    review_lines.append("Use `forecast_notes_form.html` for a guided notes form, or use the manual templates when preferred.")
     review_lines.append("Use `current_trends_context/current_trends_notes_template.md` when recent observational trends matter.")
     review_lines.append("")
     review_lines.append("## Sounding summary")
