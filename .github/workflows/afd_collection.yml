@@ -2,13 +2,27 @@ name: AFD Data Collection
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/afd_collection.yml"
+      - "config/**"
+      - "prompts/**"
+      - "scripts/**"
+      - "requirements.txt"
   schedule:
     # UTC times. Adjust for shift needs.
     - cron: "30 8,14,20 * * *"
 
+concurrency:
+  group: afd-data-collection-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   collect-afd-data:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
 
     steps:
       - name: Check out repo
