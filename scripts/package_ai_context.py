@@ -84,6 +84,79 @@ def _sounding_markdown(sounding_state: str, sounding_summary_md_path: Path) -> s
     return _read_text_if_exists(sounding_summary_md_path, max_chars=18000)
 
 
+def _write_start_here(
+    package_dir: Path,
+    now_utc: str,
+    obs_count: int,
+    obs_error_count: int,
+    external_counts: dict,
+    screenshot_counts: dict,
+    model_source_count: int,
+    sounding_state: str,
+) -> None:
+    lines = []
+    lines.append("# START HERE")
+    lines.append("")
+    lines.append(f"Created UTC: {now_utc}")
+    lines.append("")
+    lines.append("## Package status")
+    lines.append("")
+    lines.append(f"- Surface obs stations collected: {obs_count}")
+    lines.append(f"- Surface obs station errors: {obs_error_count}")
+    lines.append(f"- External text sources OK/errors: {external_counts['ok']}/{external_counts['error']}")
+    lines.append(f"- Screenshots OK/errors: {screenshot_counts['ok']}/{screenshot_counts['error']}")
+    lines.append(f"- Model context sources: {model_source_count}")
+    lines.append(f"- Sounding status: {sounding_state}")
+    lines.append("")
+    lines.append("## Fast workflow")
+    lines.append("")
+    lines.append("1. Open `package_review.md` first and make sure the quick counts look clean.")
+    lines.append("2. Open `model_context/model_notes_template.md` and add quick HRRR/RAP/NBM/HREF/WPC notes if model guidance matters for this AFD.")
+    lines.append("3. Upload `ai_context.md` to ChatGPT.")
+    lines.append("4. Also upload or paste the filled model notes when you have them.")
+    lines.append("5. Ask for either a package review or a first-pass AFD draft.")
+    lines.append("")
+    lines.append("## What to upload to ChatGPT")
+    lines.append("")
+    lines.append("For package review:")
+    lines.append("")
+    lines.append("```text")
+    lines.append("package_review.md")
+    lines.append("ai_context.md")
+    lines.append("model_context/model_notes_template.md  # if filled out")
+    lines.append("```")
+    lines.append("")
+    lines.append("For AFD drafting:")
+    lines.append("")
+    lines.append("```text")
+    lines.append("ai_context.md")
+    lines.append("model_context/model_notes_template.md  # filled out if possible")
+    lines.append("any radar/satellite/model screenshots you want the AI to see")
+    lines.append("```")
+    lines.append("")
+    lines.append("## Suggested prompts")
+    lines.append("")
+    lines.append("Review only:")
+    lines.append("")
+    lines.append("```text")
+    lines.append("Review this AFD package. Do not draft yet. Tell me what is strong, what is missing, and what I need to manually check before using AI text.")
+    lines.append("```")
+    lines.append("")
+    lines.append("Draft:")
+    lines.append("")
+    lines.append("```text")
+    lines.append("Using this package and my model notes, draft a first-pass LIX AFD. Do not invent missing data. Clearly flag assumptions and items needing human review.")
+    lines.append("```")
+    lines.append("")
+    lines.append("## Human reminders")
+    lines.append("")
+    lines.append("- This package is a starting point, not an official forecast decision engine.")
+    lines.append("- Check radar, satellite, AWIPS/local procedures, collaboration notes, current hazards, and latest model guidance before using any generated text.")
+    lines.append("- Sounding collection is currently disabled in GitHub Actions, so add observed or model sounding context manually when it matters.")
+    lines.append("")
+    (package_dir / "START_HERE.md").write_text("\n".join(lines), encoding="utf-8")
+
+
 def build_ai_context(package_dir: Path, config: dict) -> None:
     office = config["office"]
     now_utc = datetime.now(timezone.utc).isoformat()
@@ -106,25 +179,6 @@ def build_ai_context(package_dir: Path, config: dict) -> None:
     sounding_summary = _load_json_if_exists(sounding_summary_path)
     model_manifest = _load_json_if_exists(model_manifest_path)
 
-    manifest = {
-        "created_utc": now_utc,
-        "office": office,
-        "files": _relative_inventory(package_dir),
-        "surface_obs_summary": "observations/latest_surface_obs_summary.json",
-        "text_product_manifest": "text_products/text_product_manifest.json",
-        "external_sources_manifest": "external_sources/external_sources_manifest.json",
-        "model_source_manifest": "model_context/model_source_manifest.json",
-        "model_context": "model_context/model_context.md",
-        "sounding_manifest": "soundings/sounding_manifest.json",
-        "sounding_summary": "soundings/sounding_summary.json",
-        "screenshot_manifest": "screenshots/screenshot_manifest.json",
-        "prompt": "prompts/afd_prompt.md",
-        "review_prompt": "prompts/review_package_prompt.md",
-        "model_review_prompt": "prompts/model_review_prompt.md",
-    }
-
-    (package_dir / "manifest.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
-
     prompt_text = _read_text_if_exists(PROMPT_PATH)
     review_prompt_text = _read_text_if_exists(REVIEW_PROMPT_PATH)
     model_review_prompt_text = _read_text_if_exists(MODEL_REVIEW_PROMPT_PATH)
@@ -140,6 +194,37 @@ def build_ai_context(package_dir: Path, config: dict) -> None:
     sounding_state = _sounding_status(sounding_manifest)
     sounding_md = _sounding_markdown(sounding_state, sounding_summary_md_path)
 
+    _write_start_here(
+        package_dir,
+        now_utc,
+        obs_count,
+        obs_error_count,
+        external_counts,
+        screenshot_counts,
+        model_source_count,
+        sounding_state,
+    )
+
+    manifest = {
+        "created_utc": now_utc,
+        "office": office,
+        "files": _relative_inventory(package_dir),
+        "start_here": "START_HERE.md",
+        "surface_obs_summary": "observations/latest_surface_obs_summary.json",
+        "text_product_manifest": "text_products/text_product_manifest.json",
+        "external_sources_manifest": "external_sources/external_sources_manifest.json",
+        "model_source_manifest": "model_context/model_source_manifest.json",
+        "model_context": "model_context/model_context.md",
+        "sounding_manifest": "soundings/sounding_manifest.json",
+        "sounding_summary": "soundings/sounding_summary.json",
+        "screenshot_manifest": "screenshots/screenshot_manifest.json",
+        "prompt": "prompts/afd_prompt.md",
+        "review_prompt": "prompts/review_package_prompt.md",
+        "model_review_prompt": "prompts/model_review_prompt.md",
+    }
+
+    (package_dir / "manifest.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
+
     review_lines = []
     review_lines.append("# AFD Package Review")
     review_lines.append("")
@@ -154,6 +239,10 @@ def build_ai_context(package_dir: Path, config: dict) -> None:
     review_lines.append(f"- Screenshots OK/errors: {screenshot_counts['ok']}/{screenshot_counts['error']}")
     review_lines.append(f"- Model context sources: {model_source_count}")
     review_lines.append(f"- Sounding status: {sounding_state}")
+    review_lines.append("")
+    review_lines.append("## Start here")
+    review_lines.append("")
+    review_lines.append("Open `START_HERE.md` for the recommended review/drafting workflow.")
     review_lines.append("")
     review_lines.append("## Sounding summary")
     review_lines.append("")
