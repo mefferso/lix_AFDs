@@ -91,6 +91,7 @@ def _write_start_here(
     obs_error_count: int,
     external_counts: dict,
     screenshot_counts: dict,
+    analysis_counts: dict,
     model_source_count: int,
     sounding_state: str,
 ) -> None:
@@ -105,6 +106,7 @@ def _write_start_here(
     lines.append(f"- Surface obs station errors: {obs_error_count}")
     lines.append(f"- External text sources OK/errors: {external_counts['ok']}/{external_counts['error']}")
     lines.append(f"- Screenshots OK/errors: {screenshot_counts['ok']}/{screenshot_counts['error']}")
+    lines.append(f"- Analysis screenshots OK/errors: {analysis_counts['ok']}/{analysis_counts['error']}")
     lines.append(f"- Model context sources: {model_source_count}")
     lines.append(f"- Sounding status: {sounding_state}")
     lines.append("")
@@ -112,10 +114,11 @@ def _write_start_here(
     lines.append("")
     lines.append("1. Open `package_review.md` first and make sure the quick counts look clean.")
     lines.append("2. Open `forecast_notes_form.html` if you want a guided form. Answer only the questions that matter, then copy or download the generated notes.")
-    lines.append("3. Or use the manual templates: `model_context/model_notes_template.md` and `current_trends_context/current_trends_notes_template.md`.")
-    lines.append("4. Upload `ai_context.md` to ChatGPT.")
-    lines.append("5. Also upload or paste any generated notes.")
-    lines.append("6. Ask for either a package review or a first-pass AFD draft.")
+    lines.append("3. For richer synoptic/mesoscale diagnosis, upload the `analysis_context/*.png` images with `ai_context.md`.")
+    lines.append("4. Or use the manual templates: `model_context/model_notes_template.md` and `current_trends_context/current_trends_notes_template.md`.")
+    lines.append("5. Upload `ai_context.md` to ChatGPT.")
+    lines.append("6. Also upload or paste any generated notes.")
+    lines.append("7. Ask for either a package review, synoptic/mesoscale diagnosis, or a first-pass AFD draft.")
     lines.append("")
     lines.append("## What to upload to ChatGPT")
     lines.append("")
@@ -125,8 +128,8 @@ def _write_start_here(
     lines.append("package_review.md")
     lines.append("ai_context.md")
     lines.append("forecaster_notes.md  # from forecast_notes_form.html, if used")
-    lines.append("model_context/model_notes_template.md  # if filled out manually")
-    lines.append("current_trends_context/current_trends_notes_template.md  # if filled out manually")
+    lines.append("analysis_context/analysis_screenshots_manifest.json")
+    lines.append("analysis_context/*.png  # when you want image-based diagnosis")
     lines.append("```")
     lines.append("")
     lines.append("For AFD drafting:")
@@ -134,10 +137,17 @@ def _write_start_here(
     lines.append("```text")
     lines.append("ai_context.md")
     lines.append("forecaster_notes.md  # from forecast_notes_form.html, if used")
-    lines.append("any screenshots you want the AI to see")
+    lines.append("analysis_context/*.png  # optional but recommended for setup diagnosis")
+    lines.append("any other screenshots you want the AI to see")
     lines.append("```")
     lines.append("")
     lines.append("## Suggested prompts")
+    lines.append("")
+    lines.append("Setup diagnosis first:")
+    lines.append("")
+    lines.append("```text")
+    lines.append("Use ai_context.md, my notes, and the analysis_context screenshots to diagnose the synoptic and mesoscale setup first. Then draft the AFD. Do not invent missing data.")
+    lines.append("```")
     lines.append("")
     lines.append("Review only:")
     lines.append("")
@@ -167,6 +177,7 @@ def build_ai_context(package_dir: Path, config: dict) -> None:
     obs_summary_path = package_dir / "observations" / "latest_surface_obs_summary.json"
     text_manifest_path = package_dir / "text_products" / "text_product_manifest.json"
     screenshot_manifest_path = package_dir / "screenshots" / "screenshot_manifest.json"
+    analysis_manifest_path = package_dir / "analysis_context" / "analysis_screenshots_manifest.json"
     external_manifest_path = package_dir / "external_sources" / "external_sources_manifest.json"
     sounding_manifest_path = package_dir / "soundings" / "sounding_manifest.json"
     sounding_summary_path = package_dir / "soundings" / "sounding_summary.json"
@@ -177,6 +188,7 @@ def build_ai_context(package_dir: Path, config: dict) -> None:
     obs_summary = _load_json_if_exists(obs_summary_path)
     text_manifest = _load_json_if_exists(text_manifest_path)
     screenshot_manifest = _load_json_if_exists(screenshot_manifest_path)
+    analysis_manifest = _load_json_if_exists(analysis_manifest_path)
     external_manifest = _load_json_if_exists(external_manifest_path)
     sounding_manifest = _load_json_if_exists(sounding_manifest_path)
     sounding_summary = _load_json_if_exists(sounding_summary_path)
@@ -192,6 +204,7 @@ def build_ai_context(package_dir: Path, config: dict) -> None:
     obs_count = len(obs_summary.get("stations", [])) if isinstance(obs_summary, dict) else 0
     obs_error_count = len(obs_summary.get("errors", [])) if isinstance(obs_summary, dict) else 0
     screenshot_counts = _status_counts(screenshot_manifest)
+    analysis_counts = _status_counts(analysis_manifest)
     external_counts = _status_counts(external_manifest)
     model_source_count = len(model_manifest) if isinstance(model_manifest, list) else 0
     sounding_state = _sounding_status(sounding_manifest)
@@ -204,6 +217,7 @@ def build_ai_context(package_dir: Path, config: dict) -> None:
         obs_error_count,
         external_counts,
         screenshot_counts,
+        analysis_counts,
         model_source_count,
         sounding_state,
     )
@@ -219,6 +233,8 @@ def build_ai_context(package_dir: Path, config: dict) -> None:
         "external_sources_manifest": "external_sources/external_sources_manifest.json",
         "model_source_manifest": "model_context/model_source_manifest.json",
         "model_context": "model_context/model_context.md",
+        "analysis_screenshots_manifest": "analysis_context/analysis_screenshots_manifest.json",
+        "analysis_prompt": "analysis_context/analysis_prompt.md",
         "current_trends_notes": "current_trends_context/current_trends_notes_template.md",
         "sounding_manifest": "soundings/sounding_manifest.json",
         "sounding_summary": "soundings/sounding_summary.json",
@@ -242,12 +258,17 @@ def build_ai_context(package_dir: Path, config: dict) -> None:
     review_lines.append(f"- Surface obs station errors: {obs_error_count}")
     review_lines.append(f"- External text sources OK/errors: {external_counts['ok']}/{external_counts['error']}")
     review_lines.append(f"- Screenshots OK/errors: {screenshot_counts['ok']}/{screenshot_counts['error']}")
+    review_lines.append(f"- Analysis screenshots OK/errors: {analysis_counts['ok']}/{analysis_counts['error']}")
     review_lines.append(f"- Model context sources: {model_source_count}")
     review_lines.append(f"- Sounding status: {sounding_state}")
     review_lines.append("")
     review_lines.append("## Start here")
     review_lines.append("")
     review_lines.append("Open `START_HERE.md` for the recommended review/drafting workflow.")
+    review_lines.append("")
+    review_lines.append("## Analysis context")
+    review_lines.append("")
+    review_lines.append("Use `analysis_context/analysis_screenshots_manifest.json` and the `analysis_context/*.png` images when you want synoptic/mesoscale diagnosis before drafting.")
     review_lines.append("")
     review_lines.append("## Supplemental notes")
     review_lines.append("")
@@ -270,7 +291,7 @@ def build_ai_context(package_dir: Path, config: dict) -> None:
     review_lines.append("")
     review_lines.append("## Human note")
     review_lines.append("")
-    review_lines.append("If this package is missing model/sounding/current-trend context, do not let the AI write with fake confidence. Use it as a starting point only.")
+    review_lines.append("If this package is missing model/sounding/current-trend/analysis-context information, do not let the AI write with fake confidence. Use it as a starting point only.")
     review_lines.append("")
     (package_dir / "package_review.md").write_text("\n".join(review_lines), encoding="utf-8")
 
@@ -291,6 +312,7 @@ def build_ai_context(package_dir: Path, config: dict) -> None:
     md.append(f"- Surface obs station errors: {obs_error_count}")
     md.append(f"- External text sources OK/errors: {external_counts['ok']}/{external_counts['error']}")
     md.append(f"- Screenshots OK/errors: {screenshot_counts['ok']}/{screenshot_counts['error']}")
+    md.append(f"- Analysis screenshots OK/errors: {analysis_counts['ok']}/{analysis_counts['error']}")
     md.append(f"- Model context sources: {model_source_count}")
     md.append(f"- Sounding status: {sounding_state}")
     md.append("")
@@ -307,6 +329,12 @@ def build_ai_context(package_dir: Path, config: dict) -> None:
     md.append("## Model context")
     md.append("")
     md.append(model_context_md)
+    md.append("")
+    md.append("## Analysis context manifest")
+    md.append("")
+    md.append("```json")
+    md.append(json.dumps(analysis_manifest, indent=2) if analysis_manifest is not None else "[]")
+    md.append("```")
     md.append("")
     md.append("## Text product manifest")
     md.append("")
@@ -338,7 +366,7 @@ def build_ai_context(package_dir: Path, config: dict) -> None:
     md.append("")
     md.append("## Human forecaster reminder")
     md.append("")
-    md.append("This package is only a starting point. Check AWIPS/local procedures, collaboration notes, current hazards, latest observational trends, and latest model guidance before using any generated text.")
+    md.append("This package is only a starting point. Check AWIPS/local procedures, collaboration notes, current hazards, latest observational trends, analysis graphics, and latest model guidance before using any generated text.")
     md.append("")
 
     (package_dir / "ai_context.md").write_text("\n".join(md), encoding="utf-8")
