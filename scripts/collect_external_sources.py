@@ -12,12 +12,18 @@ def _slugify(name: str) -> str:
     return re.sub(r"[^A-Za-z0-9_.-]+", "_", name).strip("_")
 
 
-def _clean_external_text(raw: str) -> str:
-    """Make web/text products less awful for AI context.
+def _trim_product_footer(text: str) -> str:
+    lines = text.splitlines()
+    for idx, line in enumerate(lines):
+        if line.strip() == "$" + "$":
+            keep_through = idx + 1
+            if idx + 1 < len(lines) and "forecaster" in lines[idx + 1].lower():
+                keep_through = idx + 2
+            return "\n".join(lines[:keep_through]).rstrip() + "\n"
+    return text
 
-    SPC .txt products are already clean. NHC ?text pages and some WPC pages
-    still return lightweight HTML, so strip tags and collapse excessive blanks.
-    """
+
+def _clean_external_text(raw: str) -> str:
     text = raw
     if "<html" in raw.lower() or "<body" in raw.lower() or "<!doctype" in raw.lower():
         text = re.sub(r"<script[^>]*>.*?</script>", "", text, flags=re.IGNORECASE | re.DOTALL)
@@ -38,7 +44,7 @@ def _clean_external_text(raw: str) -> str:
             blank_count += 1
             if blank_count <= 1:
                 cleaned.append("")
-    return "\n".join(cleaned).strip() + "\n"
+    return _trim_product_footer("\n".join(cleaned).strip() + "\n")
 
 
 def collect_external_text_sources(outdir: Path, config: dict) -> None:
