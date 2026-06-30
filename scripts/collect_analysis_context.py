@@ -10,47 +10,47 @@ SPC_SECTOR_URL = "https://www.spc.noaa.gov/exper/mesoanalysis/new/viewsector.php
 FIELDS = [
     {
         "name": "spc_se_sector_overview",
-        "label": None,
+        "code": None,
         "purpose": "SPC southeast sector mesoanalysis overview page",
     },
     {
         "name": "spc_500mb_analysis",
-        "label": "500mb Analysis",
+        "code": "500mb",
         "purpose": "midlevel height/wind pattern for synoptic setup",
     },
     {
         "name": "spc_850mb_analysis",
-        "label": "850mb Analysis",
+        "code": "850mb",
         "purpose": "low-level wind/moisture pattern",
     },
     {
         "name": "spc_mixed_layer_cape",
-        "label": "CAPE - 100mb Mixed-Layer",
+        "code": "mlcp",
         "purpose": "mixed-layer instability analysis",
     },
     {
         "name": "spc_downdraft_cape",
-        "label": "CAPE - Downdraft",
+        "code": "dcape",
         "purpose": "downdraft instability and gust potential",
     },
     {
         "name": "spc_effective_bulk_shear",
-        "label": "Bulk Shear - Effective",
+        "code": "eshr",
         "purpose": "deep-layer shear / storm organization support",
     },
     {
         "name": "spc_srh_0_1km",
-        "label": "SR Helicity - Sfc-1km",
+        "code": "srh1",
         "purpose": "low-level helicity / rotation support",
     },
     {
         "name": "spc_pwat_moisture_transport",
-        "label": "Precipitable Water (w/ 850mb Moisture Transport Vector)",
+        "code": "pwtr2",
         "purpose": "deep moisture and low-level moisture transport",
     },
     {
         "name": "spc_850mb_moisture_transport",
-        "label": "850mb Moisture Transport",
+        "code": "tran",
         "purpose": "low-level moisture transport and heavy-rain support",
     },
 ]
@@ -98,19 +98,19 @@ def collect_analysis_context(outdir: Path, config: dict) -> None:
 
         for field in FIELDS:
             name = field["name"]
-            label = field["label"]
+            code = field["code"]
             output_path = analysis_dir / f"{name}.png"
             try:
                 page.goto(SPC_SECTOR_URL, wait_until="networkidle", timeout=60000)
-                if label:
-                    page.get_by_text(label, exact=True).first.click(timeout=10000)
-                    page.wait_for_timeout(2500)
+                if code:
+                    page.evaluate("code => showimage(code)", code)
+                    page.wait_for_timeout(3000)
                 page.screenshot(path=str(output_path), full_page=True)
                 manifest.append({
                     "name": name,
                     "source": "SPC mesoanalysis southeast sector",
                     "url": SPC_SECTOR_URL,
-                    "clicked_label": label,
+                    "field_code": code,
                     "purpose": field["purpose"],
                     "path": f"analysis_context/{name}.png",
                     "status": "ok",
@@ -123,7 +123,7 @@ def collect_analysis_context(outdir: Path, config: dict) -> None:
                     "name": name,
                     "source": "SPC mesoanalysis southeast sector",
                     "url": SPC_SECTOR_URL,
-                    "clicked_label": label,
+                    "field_code": code,
                     "purpose": field["purpose"],
                     "path": f"analysis_context/{name}_ERROR.txt",
                     "status": "error",
